@@ -8,10 +8,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double EPSILON = 1e-6;
 
 string ReadLine()
 {
@@ -113,9 +115,7 @@ private:
     {
         if (ratings.empty())
             return 0;
-        int rating_sum = 0;
-        for (const int rating : ratings)
-            rating_sum += rating;
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -160,10 +160,11 @@ private:
         map<int, double> document_to_relevance; // int - id, double - relevance
         for (const string& word : query.plus_words)
         {
-            if (word_to_document_freqs_.count(word) == 0)
+            auto it = word_to_document_freqs_.find(word);
+            if (it == word_to_document_freqs_.end())
                 continue;
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
-            for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word))
+            for (const auto [document_id, term_freq] : it->second)
             {
                 const DocumentData& document_data = documents_.at(document_id);
                 if (predicate_function(document_id, document_data.status, document_data.rating))
@@ -172,16 +173,17 @@ private:
         }
         for (const string& word : query.minus_words)
         {
-            if (word_to_document_freqs_.count(word) == 0)
+            auto it = word_to_document_freqs_.find(word);
+            if (it == word_to_document_freqs_.end())
                 continue;
-            for (const auto [document_id, _] : word_to_document_freqs_.at(word))
+            for (const auto [document_id, _] : it->second)
                 document_to_relevance.erase(document_id);
         }
 
         vector<Document> matched_documents;
         for (const auto [document_id, relevance] : document_to_relevance)
         {
-            matched_documents.push_back({document_id, relevance, documents_.at(document_id).rating});
+            matched_documents.push_back({ document_id, relevance, documents_.at(document_id).rating });
         }
         return matched_documents;
     }
@@ -202,8 +204,6 @@ public:
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
 
-
-
     template <typename Predicate>
     vector<Document> FindTopDocuments(const string& raw_query, Predicate predicate_function) const
     {
@@ -212,7 +212,7 @@ public:
 
         sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < 1e-6)
+                if (abs(lhs.relevance - rhs.relevance) < EPSILON)
                     return lhs.rating > rhs.rating;
                 else
                     return lhs.relevance > rhs.relevance;});
