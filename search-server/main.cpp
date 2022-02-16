@@ -7,10 +7,12 @@
 #include <utility>
 #include <vector>
 #include <optional>
+#include <numeric>
 
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double EPSILON = 1e-6;
 
 string ReadLine()
 {
@@ -102,7 +104,7 @@ public:
     {
         for (const string& word : stop_words_)
             if (!IsValidWord(word))
-                throw invalid_argument("Invalid stop word"s);
+                throw invalid_argument("Invalid stop word: "s + word);
     }
 
     explicit SearchServer(const string& stop_words_text)
@@ -111,8 +113,10 @@ public:
 
     void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings)
     {
-        if ((document_id < 0) || (documents_.count(document_id) > 0))
-            throw invalid_argument("Bad ID"s);
+        if (document_id < 0)
+            throw invalid_argument("Negative ID"s);
+        if (documents_.count(document_id) > 0)
+            throw invalid_argument("ID "s + to_string(document_id) + " is already used"s);
 
         vector<string> words;
         SplitIntoWordsNoStop(document, words);
@@ -133,9 +137,13 @@ public:
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs)
-            { if (abs(lhs.relevance - rhs.relevance) < 1e-6)
-            { return lhs.rating > rhs.rating; }
-            else { return lhs.relevance > rhs.relevance; }});
+            {
+                if (abs(lhs.relevance - rhs.relevance) < EPSILON)
+                {
+                    return lhs.rating > rhs.rating;
+                }
+                else { return lhs.relevance > rhs.relevance; }
+            });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT)
         {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
@@ -146,7 +154,7 @@ public:
 
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const
     {
-        return FindTopDocuments( raw_query,
+        return FindTopDocuments(raw_query,
             [status](int document_id, DocumentStatus document_status, int rating)
             { return document_status == status; });
     }
@@ -231,7 +239,7 @@ private:
         {
             if (!IsValidWord(word))
             {
-                throw invalid_argument("Invalid word"s);
+                throw invalid_argument("Invalid word: "s + word);
             }
             if (!IsStopWord(word))
             {
@@ -248,11 +256,7 @@ private:
         {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings)
-        {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -274,8 +278,12 @@ private:
             is_minus = true;
             text = text.substr(1);
         }
-        if (text.empty() || text[0] == '-' || !IsValidWord(text))
-            throw invalid_argument("Invalid word"s);
+        if (text.empty())
+            throw invalid_argument("Empty word"s);
+        if (text[0] == '-')
+            throw invalid_argument("Invalid word: "s + text);
+        if (!IsValidWord(text))
+            throw invalid_argument("Invalid symbols in word: "s + text);
 
         return QueryWord{ text, is_minus, IsStopWord(text) };
     }
@@ -393,7 +401,7 @@ void AddDocument(SearchServer& search_server, int document_id, const string& doc
 
 void FindTopDocuments(const SearchServer& search_server, const string& raw_query)
 {
-    cout << "Seqrch results for query: "s << raw_query << endl;
+    cout << "Search results for query: "s << raw_query << endl;
     try
     {
         for (const Document& document : search_server.FindTopDocuments(raw_query)) {
