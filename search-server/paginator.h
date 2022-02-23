@@ -45,7 +45,7 @@ public:
     {
         if (page_size < 1)
             throw std::invalid_argument("Page size should be a positive number"s);
-        if (end_range == begin_range)
+        if (end_range <= begin_range)
             throw std::invalid_argument("Paginator cannot be initialized with an empty container"s);
         auto page_start = begin_range;
         auto page_end = begin_range;

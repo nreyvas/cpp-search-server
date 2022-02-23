@@ -35,9 +35,7 @@ public:
                 throw std::invalid_argument("Invalid stop word: "s + word);
     }
 
-    explicit SearchServer(const std::string& stop_words_text)
-        : SearchServer(SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
-    {}
+    explicit SearchServer(const std::string& stop_words_text);
 
     void AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& ratings);
 
@@ -63,17 +61,8 @@ public:
         return matched_documents;
     }
 
-    std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status) const
-    {
-        return FindTopDocuments(raw_query,
-            [status](int document_id, DocumentStatus document_status, int rating)
-            { return document_status == status; });
-    }
-
-    std::vector<Document> FindTopDocuments(const std::string& raw_query) const
-    {
-        return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
-    }
+    std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status) const;
+    std::vector<Document> FindTopDocuments(const std::string& raw_query) const;
 
     int GetDocumentCount() const { return documents_.size(); }
     int GetDocumentId(int index) const { return document_ids_.at(index); }

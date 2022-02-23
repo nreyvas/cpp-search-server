@@ -1,5 +1,8 @@
 #include "request_queue.h"
 
+RequestQueue::RequestQueue(const SearchServer& search_server)
+    : server(search_server) {}
+
 std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentStatus status)
 {
     auto search_results = server.FindTopDocuments(raw_query, status);
@@ -12,6 +15,11 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query)
     auto search_results = server.FindTopDocuments(raw_query);
     RegisterRequest(search_results.empty());
     return search_results;
+}
+
+int RequestQueue::GetNoResultRequests() const
+{
+    return no_result_count_; 
 }
 
 void RequestQueue::RegisterRequest(bool no_results)
