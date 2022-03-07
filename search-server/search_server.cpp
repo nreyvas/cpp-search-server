@@ -65,6 +65,16 @@ void SearchServer::RemoveDocument(int document_id)
     document_ids_.erase(it);
 }
 
+std::vector<int>::const_iterator SearchServer::begin() const
+{
+    return document_ids_.begin(); 
+}
+
+std::vector<int>::const_iterator SearchServer::end() const
+{
+    return document_ids_.end();
+}
+
 std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
 (const std::string& raw_query, int document_id) const
 {
