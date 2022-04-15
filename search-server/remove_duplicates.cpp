@@ -23,11 +23,11 @@ void RemoveDuplicates(SearchServer& search_server)
 
 std::set<int> FindDuplicates(SearchServer& search_server, int id)
 {
-	std::map<std::string, double> current_words = search_server.GetWordFrequences(id);
+	std::map<std::string_view, double> current_words = search_server.GetWordFrequences(id);
 	std::set<int> duplicates {id};
 	for (const int it_id : search_server)
 	{
-		std::map<std::string, double> it_words = search_server.GetWordFrequences(it_id);
+		std::map<std::string_view, double> it_words = search_server.GetWordFrequences(it_id);
 		if (MapKeysEqual(current_words, it_words))
 		{
 			duplicates.insert(it_id);
@@ -38,7 +38,8 @@ std::set<int> FindDuplicates(SearchServer& search_server, int id)
 	return duplicates;
 }
 
-bool MapKeysEqual(const std::map<std::string, double>& m1, const std::map<std::string, double>& m2)
+bool MapKeysEqual(const std::map<std::string_view, double>& m1,
+	const std::map<std::string_view, double>& m2)
 {
 	if (m1.size() != m2.size())
 		return false;
